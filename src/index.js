@@ -4,6 +4,9 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+//애플리케이션 전반에 걸쳐 bootstrap을 사용할 수 있어야 해서 index.js에 import
+import 'bootstrap/dist/css/bootstrap.min.css'; 
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
