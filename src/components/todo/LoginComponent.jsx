@@ -23,8 +23,9 @@ function LoginComponent(){
         setPassword(event.target.value);
     }
 
-    function handelSubmit(){
-        if(authContext.login(username, password)){
+    //async await 는 authContext에서 사용해서
+    async function handelSubmit(){
+        if(await authContext.login(username, password)){
             navigate(`/welcome/${username}`);
         }
         else{

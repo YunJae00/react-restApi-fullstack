@@ -1,72 +1,145 @@
 import { createContext, useContext, useState } from "react";
+//import { executeBasicAuthenticationService } from "../api/HelloWorldApiService";
+import { executeBasicAuthenticationService, executeJwtAuthenticationService } from "../api/AuthenticationApiService";
+import { apiClient } from "../api/ApiClient";
 
-//
-//headerConponent에서 예시를 보여줌
-//
-
-//1.Context 생성
-//2.Context 에 State 넣기
-//3.다른 생성된 Component들과 Context 공유
-
-//1.Context 생성
 export const AuthContext = createContext()
 
-//누군가 컴포넌트를 사용하고자 하면 사용할 수 있는 간단한 hook를 생성
-//어떤 클래스에서 인증 컨텍스트를 사용하고 싶다면 useAuth hook을 이용
-//리액트 프로젝트에서 대부분 표준으로 사용하는것
 export const useAuth = () => useContext(AuthContext)
 
-//const authContext = useContext(AuthContext)
-
-//이 한수로 다른 컴포넌트에 컨텍스트를 제공
-//이 함수는 JSX를 반환함 여기에는 이 컨텍스트를 다른 컴포넌트에 제공해야함
-//AuthProvider가 여기세서 하는 일은 모든 자식을 감싸는 것 그래서 {children} , AuthProvider 아래 모든 자식은 저 변수에 할당됨
-//2.Context 에 State 넣기
 export default function AuthProvider({children}){
-
-    const [number, setNumber] = useState(10)
-
-    //10초마다 number를 1 증가시킴
-    //setInterval(() => setNumber(number+1), 10000)
     
     const [isAuthenticated, setAuthenticated] = useState(false)
 
-    //const valueToBeShared = {number, isAuthenticated, setAuthenticated}
-    //이런식으로 가능하다 (js에서는) 근데 리액트에서는 잘 안씀
+    //Context에 username 설정
+    const [username, setUsername] = useState(null)
 
-    //loginConponent에 있던걸 refactoring
-    //그리고 아래의 context에도 전달해줌
-    function login(username, password){
-        if(username==='in28minutes' && password==='dummy'){
-            //authContext.setAuthenticated(true)
-            setAuthenticated(true)
-            return true;
+    //token 설정
+    const [token, setToken] = useState(null)
 
-            //아래꺼는 다 loginConponent에서 할 거
-            //setShowSuccessMessage(true);
-            //setShowErrorMessage(false);
-            ////navigate('/welcome'); //useNavigate 이거로 다른 페이지를 탐색할 수 있음 (위치를 변경하는 명령 메서드를 반환)
-            //navigate(`/welcome/${username}`); //변수를 넣고싶으면 ${}, 그리고 이 부분이 변수 값으로 대체되려면, `을 써야함
-        }
-        else{
-            //authContext.setAuthenticated(false)
-            setAuthenticated(false)
+    // function login(username, password){
+    //     if(username==='in28minutes' && password==='dummy'){
+    //         setUsername(username)
+    //         setAuthenticated(true)
+    //         return true;
+    //     }
+    //     else{
+    //         setAuthenticated(false)
+    //         setUsername(null)
+    //         return false
+    //     }
+    // }
+    //이젠 실제로 username과 password를 받아와서 토큰을 생성하고 그 토읔을 인증 헤더로서 전송하고 /basizauth라는 url 호출하려함
+    //그리고 올바른 응답을 받으면 그때 토큰을 컨텍스트에 저장할거임
+    
+    // async function login(username, password){
+
+    //     //이렇게 토큰을 생성하고 서비스를 호출함
+    //     //'Basic aW4yOG1pbnV0ZXM6ZHVtbXk=' 이런식
+    //     //그리고 Base64인코딩 (*정확하게 해줘야됨*)
+    //     const baToken = 'Basic ' + window.btoa(username + ":" + password)
+    //     //그리고 이걸 Context에 설정해서 우리고 api호출을 할 때 이 토큰을 다시 사용할 수 있음
+    //     // await executeBasicAuthenticationService(baToken)
+    //     //     .then(response=>console.log("2:" + response))
+    //     //     .catch(error=>console.log(error))
+
+    //     // console.log('1 : test')
+    //     //이러면 1 , 2 순서로 나옴 근데 이 메서드는 우리는 응답을 받을 때까지 실행을 중지시키고 받으면 true를 리턴하길 원함 -> async 메서드로 만들어야됨
+        
+    //     //이러면 결과 : {data: 'Success', status: 200, statusText: '', headers: AxiosHeaders, config: {…}, …}
+    //     //다른 아이디 치면 CORS 정책에 의해 차단되었다고 나옴
+
+    //     try{
+    //         const response = await executeBasicAuthenticationService(baToken)
+
+    //         if(response.status==200){
+    //             setUsername(username)
+    //             setAuthenticated(true)
+    //             setToken(baToken)
+
+    //             //모든 api클라이언트에서 호출을 가로채고 인증 헤더를 설정해야함 그래서 직접 AuthCOntext 에서 해줄거임
+    //             //api클라이언트에 공통 토큰을 설정
+    //             apiClient.interceptors.request.use(
+    //                 (config) => {
+    //                     console.log('intercepting and adding a token')
+    //                     config.headers.Authorization = baToken
+    //                     return config
+    //                     //요청 설정에 인증 헤더를 추가하고 있음
+    //                 }
+    //                 //이제 다른 페이지 가면 요청에 성공하는걸 볼 수 있음
+    //             )
+    //             return true;
+    //         }
+    //         else{
+    //             //logout()으로 대체 가능
+    //             setAuthenticated(false)
+    //             setUsername(null)
+    //             setToken(null)
+    //             return false
+    //         }
+    //     } catch(error){
+    //         //logout()으로 대체 가능
+    //         setAuthenticated(false)
+    //         setUsername(null)
+    //         setToken(null)
+    //         return false
+    //     }
+
+    //     // if(executeBasicAuthenticationService){
+    //     //     setUsername(username)
+    //     //     setAuthenticated(true)
+    //     //     return true;
+    //     // }
+    //     // else{
+    //     //     setAuthenticated(false)
+    //     //     setUsername(null)
+    //     //     return false
+    //     // }
+    // }
+
+    //이젠 JWT 사용
+    async function login(username, password){
+
+        //const baToken = 'Basic ' + window.btoa(username + ":" + password)
+        //token을 만들 필요 없음
+
+        try{
+            const response = await executeJwtAuthenticationService(username, password)
+
+            if(response.status==200){
+                const jwtToken = 'Bearer ' + response.data.token
+                setUsername(username)
+                setAuthenticated(true)
+                //JWT는 좀 다름
+                setToken(jwtToken)
+                apiClient.interceptors.request.use(
+                    (config) => {
+                        console.log('intercepting and adding a token')
+                        config.headers.Authorization = jwtToken
+                        return config
+                    }
+                )
+                return true;
+            }
+            else{
+                logout()
+                return false
+            }
+        } catch(error){
+            logout()
             return false
-            
-            //setShowSuccessMessage(false);
-            //setShowErrorMessage(true);
         }
+
     }
 
     function logout(){
         setAuthenticated(false)
+        setUsername(null)
+        setToken(null)
     }
 
     return (
-        // number를 다른 컴포넌트에 모두 주고 싶음 ex headercomponent를 예시로 듬
-        // 이제는 컴포넌트에서 isAuthenticated, setAuthenticated에 접근할 수 있게 함
-        //원래는 setAuthenticated있었는데 없어도됨 (login이랑 logout을 여기로 빼서)
-        <AuthContext.Provider value={ {number, isAuthenticated, login, logout} }> 
+        <AuthContext.Provider value={ {isAuthenticated, login, logout, username, token} }> 
             {children}
         </AuthContext.Provider>
     )

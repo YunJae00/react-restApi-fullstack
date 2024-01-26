@@ -12,14 +12,16 @@ import ListTodosComponent from './ListTodosComponent'
 import ErrorComponent from './ErrorComponent'
 import WelcomeComponent from './WelcomeComponent'
 import LoginComponent from './LoginComponent'
+import TodoComponent from './TodoComponent'
 
 import AuthProvider, { useAuth } from './security/AuthContext'
+
 
 //로그인된 상태에서 보여주는 라우터를 관리
 function AuthenticatedRoute({children}){
     const authContext = useAuth()
     //사용자가 인증되어있을 때만 children을 반환 (안에 감싸고 있는 div를 반환한다는 뜻일듯?)
-    if(authContext.isAuthenticated)
+    if(authContext.token)
     return(
         children
     )
@@ -46,11 +48,19 @@ export default function TodoApp(){
                                 <WelcomeComponent /> 
                             </AuthenticatedRoute>
                         }/>
+
                         <Route path='/todos' element={ 
                             <AuthenticatedRoute>
                                 <ListTodosComponent /> 
                             </AuthenticatedRoute>
                         }/>
+
+                        <Route path='/todos/:id' element={ 
+                            <AuthenticatedRoute>
+                                <TodoComponent /> 
+                            </AuthenticatedRoute>
+                        }/>
+
                         <Route path='/logout' element={ 
                             <AuthenticatedRoute>
                                 <LogoutComponent /> 
